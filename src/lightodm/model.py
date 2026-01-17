@@ -68,6 +68,16 @@ class MongoBaseModel(BaseModel):
     class Settings:
         name: Optional[str] = None  # MongoDB collection name
 
+    @classmethod
+    def _uses_mongo_id_alias(cls) -> bool:
+        field = cls.model_fields.get("id")
+        if field is None:
+            return False
+        alias = getattr(field, "serialization_alias", None) or getattr(field, "alias", None)
+        if alias is None:
+            alias = getattr(field, "validation_alias", None)
+        return alias == "_id"
+
     def __init_subclass__(cls, **kwargs):
         """
         Validate Settings class is properly defined in subclass.
@@ -144,6 +154,11 @@ class MongoBaseModel(BaseModel):
             Dictionary suitable for MongoDB insertion/update
         """
         data = self.model_dump(by_alias=True, exclude_none=exclude_none)
+        if not self._uses_mongo_id_alias():
+            if "id" in data and "_id" not in data:
+                data["_id"] = data.pop("id")
+            else:
+                data.pop("id", None)
         # Manually add extra fields that were captured
         extra_fields = self.__pydantic_extra__
         if extra_fields:
@@ -165,6 +180,9 @@ class MongoBaseModel(BaseModel):
         """
         if data is None:
             return None
+        if not cls._uses_mongo_id_alias() and "_id" in data and "id" not in data:
+            data = dict(data)
+            data["id"] = data["_id"]
 
         return cls.model_validate(data)
 

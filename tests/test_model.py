@@ -131,3 +131,24 @@ def test_collection_name_validation():
 
     with pytest.raises(NotImplementedError):
         InvalidModel._get_collection_name()
+
+
+def test_overridden_id_without_alias_is_mapped():
+    """Test that an overridden id field without alias still maps to _id"""
+
+    class CustomIdModel(MongoBaseModel):
+        class Settings:
+            name = "custom_id_models"
+
+        id: str
+        name: str
+
+    model = CustomIdModel(id="custom-id", name="Custom")
+    data = model._to_mongo_dict()
+
+    assert "_id" in data
+    assert data["_id"] == "custom-id"
+    assert "id" not in data
+
+    loaded = CustomIdModel._from_mongo_dict({"_id": "loaded-id", "name": "Loaded"})
+    assert loaded.id == "loaded-id"
