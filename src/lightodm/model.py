@@ -4,18 +4,17 @@ MongoDB Base Model for Pydantic
 Provides ODM functionality for MongoDB with both sync and async support.
 """
 
-from typing import Optional, Any, List, Type, TypeVar, AsyncIterator, Iterator
+from typing import AsyncIterator, Iterator, List, Optional, Type, TypeVar
 
-from pydantic import BaseModel, Field, ConfigDict
-from pymongo.collection import Collection as PyMongoCollection
-from motor.motor_asyncio import AsyncIOMotorCollection
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorCollection
+from pydantic import BaseModel, ConfigDict, Field
+from pymongo.collection import Collection as PyMongoCollection
 
-from lightodm.connection import get_collection, get_async_database
-
+from lightodm.connection import get_async_database, get_collection
 
 # TypeVar for generic class methods
-T = TypeVar('T', bound='MongoBaseModel')
+T = TypeVar("T", bound="MongoBaseModel")
 
 
 def generate_id() -> str:
@@ -59,7 +58,7 @@ class MongoBaseModel(BaseModel):
         users = await User.afind({"age": {"$gt": 18}})
     """
 
-    model_config = ConfigDict(populate_by_name=True, extra='allow')
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
 
     # ID field that maps to MongoDB _id
     id: Optional[str] = Field(default_factory=generate_id, alias="_id")
@@ -84,25 +83,23 @@ class MongoBaseModel(BaseModel):
         """
         super().__init_subclass__(**kwargs)
         # Skip validation for the base class itself
-        if cls.__name__ == 'MongoBaseModel':
+        if cls.__name__ == "MongoBaseModel":
             return
 
         # Check if Settings class exists and has name attribute
-        if not hasattr(cls, 'Settings'):
+        if not hasattr(cls, "Settings"):
             # Allow intermediate base classes without Settings
             pass
-        elif hasattr(cls.Settings, 'name') and cls.Settings.name is None:
+        elif hasattr(cls.Settings, "name") and cls.Settings.name is None:
             # Settings exists but name is None - could be intermediate class
             pass
 
     @classmethod
     def _validate_collection_name(cls):
         """Ensure Settings.name is defined in subclass"""
-        if not hasattr(cls, 'Settings'):
-            raise NotImplementedError(
-                f"{cls.__name__} must define an inner 'Settings' class"
-            )
-        if not hasattr(cls.Settings, 'name') or cls.Settings.name is None:
+        if not hasattr(cls, "Settings"):
+            raise NotImplementedError(f"{cls.__name__} must define an inner 'Settings' class")
+        if not hasattr(cls.Settings, "name") or cls.Settings.name is None:
             raise NotImplementedError(
                 f"{cls.__name__}.Settings must define 'name' attribute with the collection name"
             )
@@ -219,11 +216,7 @@ class MongoBaseModel(BaseModel):
         if doc_id is None:
             raise ValueError("Document ID is required")
 
-        collection.replace_one(
-            {"_id": doc_id},
-            data,
-            upsert=True
-        )
+        collection.replace_one({"_id": doc_id}, data, upsert=True)
         return doc_id
 
     def delete(self) -> bool:
@@ -400,11 +393,7 @@ class MongoBaseModel(BaseModel):
         if doc_id is None:
             raise ValueError("Document ID is required")
 
-        await collection.replace_one(
-            {"_id": doc_id},
-            data,
-            upsert=True
-        )
+        await collection.replace_one({"_id": doc_id}, data, upsert=True)
         return doc_id
 
     async def adelete(self) -> bool:

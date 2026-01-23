@@ -25,17 +25,17 @@ Example:
 
 __version__ = "0.1.0"
 
-from lightodm.model import MongoBaseModel, generate_id
 from lightodm.connection import (
     MongoConnection,
     connect,
-    get_mongo_connection,
-    get_collection,
-    get_async_database,
-    get_database,
-    get_client,
     get_async_client,
+    get_async_database,
+    get_client,
+    get_collection,
+    get_database,
+    get_mongo_connection,
 )
+from lightodm.model import MongoBaseModel, generate_id
 
 __all__ = [
     # Model

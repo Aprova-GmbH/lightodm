@@ -1,11 +1,13 @@
 """Tests for MongoConnection singleton"""
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from lightodm.connection import MongoConnection, connect
-from pymongo import MongoClient
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
+
+from lightodm.connection import MongoConnection, connect
 
 
 class TestMongoConnection:
@@ -164,7 +166,7 @@ class TestMongoConnection:
                 url="mongodb://localhost:27017",
                 username="testuser",
                 password="testpass",
-                db_name="testdb"
+                db_name="testdb",
             )
 
             assert db is not None

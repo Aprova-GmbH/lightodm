@@ -1,6 +1,7 @@
 """Tests for async operations in lightodm."""
 
 import pytest
+
 from lightodm import MongoBaseModel
 
 
@@ -53,10 +54,7 @@ async def test_async_find(mock_db):
 
     try:
         # Create multiple documents
-        models = [
-            AsyncTestModel(name=f"test_{i}", value=i)
-            for i in range(5)
-        ]
+        models = [AsyncTestModel(name=f"test_{i}", value=i) for i in range(5)]
 
         for model in models:
             await model.asave()
@@ -118,10 +116,7 @@ async def test_async_update(mock_db):
         await model.asave()
 
         # Update
-        success = await AsyncTestModel.aupdate_one(
-            {"_id": model.id},
-            {"$set": {"value": 20}}
-        )
+        success = await AsyncTestModel.aupdate_one({"_id": model.id}, {"$set": {"value": 20}})
         assert success is True
 
         # Verify update

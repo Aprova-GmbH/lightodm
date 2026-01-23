@@ -5,15 +5,15 @@ Thread-safe singleton connection manager for MongoDB supporting both sync (pymon
 and async (motor) clients with automatic cleanup.
 """
 
-import os
 import atexit
+import os
 import threading
 from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo import MongoClient
-from pymongo.database import Database
 from pymongo.collection import Collection
+from pymongo.database import Database
 
 
 class MongoConnection:
@@ -91,12 +91,16 @@ class MongoConnection:
                 maxConnecting=2,
                 waitQueueTimeoutMS=10000,
             )
-            self._db = self._client[mongo_db_name] if mongo_db_name else self._client.get_default_database()
+            self._db = (
+                self._client[mongo_db_name]
+                if mongo_db_name
+                else self._client.get_default_database()
+            )
             # Test the connection
             self._client.admin.command("ping")
             atexit.register(self.close_connection)
         except Exception as e:
-            raise ConnectionError(f"Failed to initialize MongoDB (sync) connection: {e}")
+            raise ConnectionError(f"Failed to initialize MongoDB (sync) connection: {e}") from e
 
     @property
     def client(self) -> MongoClient:
@@ -158,7 +162,9 @@ class MongoConnection:
                 if self._async_client is not None:
                     self._async_client.close()
                 self._async_client = None
-                raise ConnectionError(f"Failed to initialize MongoDB (async) connection: {e}")
+                raise ConnectionError(
+                    f"Failed to initialize MongoDB (async) connection: {e}"
+                ) from e
 
         return self._async_client
 

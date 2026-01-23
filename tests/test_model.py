@@ -2,8 +2,10 @@
 Basic tests for LightODM model functionality
 """
 
-import pytest
 from typing import Optional
+
+import pytest
+
 from lightodm import MongoBaseModel, generate_id
 
 
@@ -79,7 +81,7 @@ def test_from_mongo_dict():
         "_id": "507f1f77bcf86cd799439011",
         "name": "John Doe",
         "email": "john@example.com",
-        "age": 30
+        "age": 30,
     }
 
     user = TestUser._from_mongo_dict(doc)
@@ -98,14 +100,10 @@ def test_from_mongo_dict_none():
 
 def test_extra_fields():
     """Test that extra fields are allowed"""
-    user = TestUser(
-        name="John Doe",
-        email="john@example.com",
-        custom_field="custom_value"
-    )
+    user = TestUser(name="John Doe", email="john@example.com", custom_field="custom_value")
 
     # Extra fields should be stored
-    assert hasattr(user, '__pydantic_extra__')
+    assert hasattr(user, "__pydantic_extra__")
 
     # Should be included in mongo dict
     data = user._to_mongo_dict()

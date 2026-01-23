@@ -1,7 +1,8 @@
 """Pytest configuration and fixtures for lightodm tests."""
 
-import pytest
 import mongomock
+import pytest
+
 from lightodm.connection import MongoConnection
 
 
