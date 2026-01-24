@@ -16,13 +16,14 @@ class AsyncTestModel(MongoBaseModel):
 
 
 @pytest.mark.asyncio
-async def test_async_save_and_get(mock_db):
+async def test_async_save_and_get(async_mock_collection):
     """Test async save and get operations."""
-    # Override async collection to use mock
     original_method = AsyncTestModel.get_async_collection
+    collection = async_mock_collection(AsyncTestModel.Settings.name)
 
-    async def mock_get_collection():
-        return mock_db[AsyncTestModel.Settings.name]
+    @classmethod
+    async def mock_get_collection(cls):
+        return collection
 
     AsyncTestModel.get_async_collection = mock_get_collection
 
@@ -43,12 +44,14 @@ async def test_async_save_and_get(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_async_find(mock_db):
+async def test_async_find(async_mock_collection):
     """Test async find operations."""
     original_method = AsyncTestModel.get_async_collection
+    collection = async_mock_collection(AsyncTestModel.Settings.name)
 
-    async def mock_get_collection():
-        return mock_db[AsyncTestModel.Settings.name]
+    @classmethod
+    async def mock_get_collection(cls):
+        return collection
 
     AsyncTestModel.get_async_collection = mock_get_collection
 
@@ -71,12 +74,14 @@ async def test_async_find(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_async_delete(mock_db):
+async def test_async_delete(async_mock_collection):
     """Test async delete operation."""
     original_method = AsyncTestModel.get_async_collection
+    collection = async_mock_collection(AsyncTestModel.Settings.name)
 
-    async def mock_get_collection():
-        return mock_db[AsyncTestModel.Settings.name]
+    @classmethod
+    async def mock_get_collection(cls):
+        return collection
 
     AsyncTestModel.get_async_collection = mock_get_collection
 
@@ -101,12 +106,14 @@ async def test_async_delete(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_async_update(mock_db):
+async def test_async_update(async_mock_collection):
     """Test async update operations."""
     original_method = AsyncTestModel.get_async_collection
+    collection = async_mock_collection(AsyncTestModel.Settings.name)
 
-    async def mock_get_collection():
-        return mock_db[AsyncTestModel.Settings.name]
+    @classmethod
+    async def mock_get_collection(cls):
+        return collection
 
     AsyncTestModel.get_async_collection = mock_get_collection
 
@@ -127,12 +134,14 @@ async def test_async_update(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_async_count(mock_db):
+async def test_async_count(async_mock_collection):
     """Test async count operation."""
     original_method = AsyncTestModel.get_async_collection
+    collection = async_mock_collection(AsyncTestModel.Settings.name)
 
-    async def mock_get_collection():
-        return mock_db[AsyncTestModel.Settings.name]
+    @classmethod
+    async def mock_get_collection(cls):
+        return collection
 
     AsyncTestModel.get_async_collection = mock_get_collection
 

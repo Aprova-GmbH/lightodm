@@ -9,7 +9,7 @@ import pytest
 from lightodm import MongoBaseModel, generate_id
 
 
-class TestUser(MongoBaseModel):
+class SampleUser(MongoBaseModel):
     """Test model for unit tests"""
 
     class Settings:
@@ -33,7 +33,7 @@ def test_generate_id():
 
 def test_model_creation():
     """Test model instantiation"""
-    user = TestUser(name="John Doe", email="john@example.com", age=30)
+    user = SampleUser(name="John Doe", email="john@example.com", age=30)
 
     assert user.name == "John Doe"
     assert user.email == "john@example.com"
@@ -44,8 +44,8 @@ def test_model_creation():
 
 def test_model_default_id():
     """Test that ID is auto-generated"""
-    user1 = TestUser(name="User 1", email="user1@example.com")
-    user2 = TestUser(name="User 2", email="user2@example.com")
+    user1 = SampleUser(name="User 1", email="user1@example.com")
+    user2 = SampleUser(name="User 2", email="user2@example.com")
 
     assert user1.id is not None
     assert user2.id is not None
@@ -54,7 +54,7 @@ def test_model_default_id():
 
 def test_to_mongo_dict():
     """Test conversion to MongoDB dictionary"""
-    user = TestUser(name="John Doe", email="john@example.com", age=30)
+    user = SampleUser(name="John Doe", email="john@example.com", age=30)
     data = user._to_mongo_dict()
 
     assert "_id" in data
@@ -66,7 +66,7 @@ def test_to_mongo_dict():
 
 def test_to_mongo_dict_exclude_none():
     """Test conversion with exclude_none"""
-    user = TestUser(name="John Doe", email="john@example.com")
+    user = SampleUser(name="John Doe", email="john@example.com")
     data = user._to_mongo_dict(exclude_none=True)
 
     assert "_id" in data
@@ -84,7 +84,7 @@ def test_from_mongo_dict():
         "age": 30,
     }
 
-    user = TestUser._from_mongo_dict(doc)
+    user = SampleUser._from_mongo_dict(doc)
 
     assert user.id == "507f1f77bcf86cd799439011"
     assert user.name == "John Doe"
@@ -94,13 +94,13 @@ def test_from_mongo_dict():
 
 def test_from_mongo_dict_none():
     """Test _from_mongo_dict with None input"""
-    user = TestUser._from_mongo_dict(None)
+    user = SampleUser._from_mongo_dict(None)
     assert user is None
 
 
 def test_extra_fields():
     """Test that extra fields are allowed"""
-    user = TestUser(name="John Doe", email="john@example.com", custom_field="custom_value")
+    user = SampleUser(name="John Doe", email="john@example.com", custom_field="custom_value")
 
     # Extra fields should be stored
     assert hasattr(user, "__pydantic_extra__")

@@ -24,6 +24,83 @@ def mock_collection(mock_db):
     return mock_db.test_collection
 
 
+class AsyncMockCollection:
+    """
+    Async wrapper around a mongomock collection.
+
+    Provides async-compatible methods that delegate to the underlying
+    sync mongomock collection, allowing tests to run without MongoDB.
+    """
+
+    def __init__(self, sync_collection):
+        self._collection = sync_collection
+
+    async def find_one(self, filter, *args, **kwargs):
+        """Async find_one - delegates to sync collection."""
+        return self._collection.find_one(filter, *args, **kwargs)
+
+    async def replace_one(self, filter, replacement, *args, **kwargs):
+        """Async replace_one - delegates to sync collection."""
+        return self._collection.replace_one(filter, replacement, *args, **kwargs)
+
+    async def delete_one(self, filter, *args, **kwargs):
+        """Async delete_one - delegates to sync collection."""
+        return self._collection.delete_one(filter, *args, **kwargs)
+
+    async def update_one(self, filter, update, *args, **kwargs):
+        """Async update_one - delegates to sync collection."""
+        return self._collection.update_one(filter, update, *args, **kwargs)
+
+    async def count_documents(self, filter, *args, **kwargs):
+        """Async count_documents - delegates to sync collection."""
+        return self._collection.count_documents(filter, *args, **kwargs)
+
+    def find(self, filter, *args, **kwargs):
+        """
+        Returns an async cursor wrapper.
+
+        Motor's find() is sync but returns an async cursor,
+        so we return a wrapper with async to_list().
+        """
+        cursor = self._collection.find(filter, *args, **kwargs)
+        return AsyncMockCursor(cursor)
+
+
+class AsyncMockCursor:
+    """Async wrapper around a mongomock cursor."""
+
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    async def to_list(self, length=None):
+        """Async to_list - returns all documents."""
+        return list(self._cursor)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self._cursor)
+        except StopIteration:
+            raise StopAsyncIteration from None
+
+
+@pytest.fixture
+def async_mock_collection(mock_db):
+    """
+    Get an async-compatible mock collection.
+
+    Returns an AsyncMockCollection that wraps a mongomock collection,
+    providing async methods for use in async tests.
+    """
+
+    def get_collection(name):
+        return AsyncMockCollection(mock_db[name])
+
+    return get_collection
+
+
 @pytest.fixture(autouse=True)
 def reset_connection():
     """Reset MongoConnection singleton between tests."""
