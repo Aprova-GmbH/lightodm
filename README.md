@@ -4,7 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/lightodm.svg)](https://pypi.org/project/lightodm/)
 [![Build Status](https://github.com/Aprova-GmbH/lightodm/workflows/Tests/badge.svg)](https://github.com/Aprova-GmbH/lightodm/actions)
 [![Coverage](https://codecov.io/gh/Aprova-GmbH/lightodm/branch/main/graph/badge.svg)](https://codecov.io/gh/Aprova-GmbH/lightodm)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **Lightweight MongoDB ODM** - A simple, fast Object-Document Mapper for MongoDB with full async/sync support.
@@ -294,7 +294,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+Apache License 2.0 - see [LICENSE](LICENSE) file for details.
 
 ## Author
 
