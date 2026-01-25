@@ -109,22 +109,30 @@ def async_mock_collection(mock_db):
 @pytest.fixture(autouse=True)
 def reset_connection():
     """Reset MongoConnection singleton between tests."""
+    # Import here to avoid circular import
+    import lightodm.connection as conn_module
+
     # Reset the singleton instance
     MongoConnection._instance = None
     MongoConnection._client = None
     MongoConnection._db = None
     MongoConnection._async_client = None
+    # Reset the global connection variable
+    conn_module._mongo_conn = None
     yield
     # Clean up after test
     if MongoConnection._instance:
         MongoConnection._instance.close_connection()
+    # Reset global again after cleanup
+    conn_module._mongo_conn = None
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def cleanup_test_collections():
     """
     Cleanup fixture for integration tests.
     Drops all test collections after each integration test.
+    Uses function scope to ensure event loop compatibility.
     """
     yield
     # Cleanup after test

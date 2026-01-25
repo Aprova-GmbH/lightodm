@@ -107,6 +107,7 @@ disallow_any_generics = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "unit: Fast unit tests (no MongoDB required)",
     "integration: Integration tests (require real MongoDB)",

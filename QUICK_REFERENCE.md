@@ -10,9 +10,11 @@
 
 # 2. Update CHANGELOG.md with changes
 
-# 3. Run tests
+# 3. Run tests (unit + integration)
 cd /Users/vykhand/DEV/lightodm
-uv run pytest --cov=lightodm --cov-report=term-missing
+uv run pytest -m unit
+# Start MongoDB if not running: docker run -d -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=test -e MONGO_INITDB_ROOT_PASSWORD=test --name lightodm-mongo mongo:latest
+MONGO_URL="mongodb://localhost:27017" MONGO_USER="test" MONGO_PASSWORD="test" MONGO_DB_NAME="test_db" uv run pytest -m integration
 uv run black --check src tests
 uv run ruff check src tests
 
@@ -56,7 +58,13 @@ python -c "from lightodm import MongoBaseModel; print('OK')"
 ## Common Commands
 
 ```bash
-# Run tests
+# Run unit tests only (no MongoDB needed - fast!)
+uv run pytest -m unit -v
+
+# Run integration tests only (requires MongoDB via Docker)
+uv run pytest -m integration -v
+
+# Run all tests
 uv run pytest -v
 
 # Run tests with coverage
@@ -154,12 +162,15 @@ lightodm/
 # Create feature branch
 git checkout -b feature/my-feature
 
-# Make changes and test
-uv run pytest --cov=lightodm
+# Make changes and test (unit tests are fast!)
+uv run pytest -m unit
 
 # Format and lint
 uv run black src tests
 uv run ruff check --fix src tests
+
+# Run integration tests if needed (requires MongoDB)
+MONGO_URL="mongodb://localhost:27017" MONGO_USER="test" MONGO_PASSWORD="test" MONGO_DB_NAME="test_db" uv run pytest -m integration
 
 # Commit using Conventional Commits
 git commit -m "feat: add new feature"
@@ -194,25 +205,68 @@ uv run twine upload dist/*
 
 ## MongoDB for Testing
 
+### Quick Test Workflow
+
 ```bash
-# Start MongoDB with Docker (with authentication)
+# 1. Run unit tests (NO MongoDB required - uses mocks)
+uv run pytest -m unit
+
+# 2. Start MongoDB with Docker for integration tests
 docker run -d -p 27017:27017 \
   -e MONGO_INITDB_ROOT_USERNAME=test \
   -e MONGO_INITDB_ROOT_PASSWORD=test \
-  --name mongo-test \
+  --name lightodm-mongo \
   mongo:latest
 
-# Set environment variables for tests
+# 3. Wait for MongoDB to start (optional but recommended)
+sleep 5
+
+# 4. Run integration tests (REQUIRES MongoDB)
+MONGO_URL="mongodb://localhost:27017" \
+MONGO_USER="test" \
+MONGO_PASSWORD="test" \
+MONGO_DB_NAME="test_db" \
+uv run pytest -m integration -v
+
+# 5. Run all tests with coverage (simulates CI workflow)
+uv run pytest -m unit --cov=lightodm --cov-report=term-missing && \
+MONGO_URL="mongodb://localhost:27017" \
+MONGO_USER="test" \
+MONGO_PASSWORD="test" \
+MONGO_DB_NAME="test_db" \
+uv run pytest -m integration --cov=lightodm --cov-append --cov-report=term-missing
+
+# 6. Cleanup MongoDB container when done
+docker stop lightodm-mongo && docker rm lightodm-mongo
+```
+
+### Test Markers
+
+- **`-m unit`**: Fast unit tests using mocks (no MongoDB needed) - 10 tests
+- **`-m integration`**: Integration tests with real MongoDB (required) - 16 tests
+- **No marker**: Runs all 26 tests (requires MongoDB)
+
+### Environment Variables for Integration Tests
+
+```bash
+# Set for the session
 export MONGO_URL="mongodb://localhost:27017"
 export MONGO_USER="test"
 export MONGO_PASSWORD="test"
 export MONGO_DB_NAME="test_db"
 
-# Stop MongoDB
-docker stop mongo-test
+# Or inline with command
+MONGO_URL="mongodb://localhost:27017" MONGO_USER="test" MONGO_PASSWORD="test" MONGO_DB_NAME="test_db" uv run pytest -m integration
+```
 
-# Remove container
-docker rm mongo-test
+### Verify MongoDB is Running
+
+```bash
+# Check container status
+docker ps | grep lightodm-mongo
+
+# Check MongoDB connection
+docker exec lightodm-mongo mongosh --eval "db.adminCommand({ping: 1})" -u test -p test
 ```
 
 ---
@@ -351,11 +405,14 @@ def get_collection(cls):
 
 ## Testing Best Practices
 
-- Use `mongomock` for unit tests
-- Reset `MongoConnection` singleton between tests
+- **Unit tests** (`@pytest.mark.unit`): Use `mongomock`, NEVER require MongoDB
+- **Integration tests** (`@pytest.mark.integration`): Use real MongoDB via Docker
+- Run unit tests locally (fast feedback), integration tests in CI or with Docker
+- Reset `MongoConnection` singleton between tests via `reset_connection` fixture
 - Test both sync and async code paths
 - Target >95% code coverage
-- Use `monkeypatch` to override `get_collection()`
+- Async fixtures must use `scope="function"` to share event loop with tests
+- Use `cleanup_test_collections` fixture for integration tests to clean up MongoDB
 
 ---
 
