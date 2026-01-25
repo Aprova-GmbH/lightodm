@@ -130,6 +130,7 @@ async def cleanup_test_collections():
     # Cleanup after test
     try:
         from lightodm.connection import get_async_database
+
         db = await get_async_database()
         collections = await db.list_collection_names()
         for collection_name in collections:

@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from lightodm.connection import MongoConnection, connect, get_database
+from lightodm.connection import MongoConnection, connect
 
 
 class TestMongoConnection:
