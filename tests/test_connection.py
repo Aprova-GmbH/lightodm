@@ -7,11 +7,11 @@ import pytest
 from lightodm.connection import (
     MongoConnection,
     connect,
+    get_async_client,
+    get_async_database,
     get_client,
     get_collection,
     get_database,
-    get_async_client,
-    get_async_database,
 )
 
 
@@ -266,4 +266,3 @@ class TestMongoConnection:
         # get_collection should reinitialize
         collection = conn.get_collection("test_reinit")
         assert collection is not None
-

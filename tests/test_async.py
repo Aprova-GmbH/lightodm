@@ -267,6 +267,7 @@ async def test_async_delete_without_id(cleanup_test_collections):
 @pytest.mark.asyncio
 async def test_async_save_exclude_none(cleanup_test_collections):
     """Test async save with exclude_none parameter."""
+
     # Create model with optional field
     class ModelWithOptional(AsyncTestModel):
         optional: str = None

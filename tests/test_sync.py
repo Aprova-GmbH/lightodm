@@ -34,9 +34,6 @@ def test_sync_save_and_get(cleanup_test_collections):
 @pytest.mark.integration
 def test_sync_save_exclude_none(cleanup_test_collections):
     """Test sync save with exclude_none parameter."""
-    # Create model with None field
-    model = SyncTestModel(name="test", value=42)
-    model_dict = model.model_dump()
 
     # Add an optional field that would be None
     class ModelWithOptional(MongoBaseModel):
