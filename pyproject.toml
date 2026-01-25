@@ -58,8 +58,9 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/Aprova-GmbH/lightodm"
 Repository = "https://github.com/Aprova-GmbH/lightodm"
-Documentation = "https://github.com/Aprova-GmbH/lightodm#readme"
+Documentation = "https://lightodm.readthedocs.io"
 Issues = "https://github.com/Aprova-GmbH/lightodm/issues"
+Changelog = "https://github.com/Aprova-GmbH/lightodm/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lightodm"]

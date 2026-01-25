@@ -4,7 +4,15 @@ import os
 
 import pytest
 
-from lightodm.connection import MongoConnection, connect
+from lightodm.connection import (
+    MongoConnection,
+    connect,
+    get_client,
+    get_collection,
+    get_database,
+    get_async_client,
+    get_async_database,
+)
 
 
 class TestMongoConnection:
@@ -179,3 +187,83 @@ class TestMongoConnection:
                     os.environ[key] = value
                 elif key in os.environ:
                     del os.environ[key]
+
+    @pytest.mark.integration
+    def test_get_database_helper(self, reset_connection):
+        """Test get_database helper function."""
+        db = get_database()
+        assert db is not None
+        assert db.name == os.getenv("MONGO_DB_NAME", "test_db")
+
+    @pytest.mark.integration
+    def test_get_client_helper(self, reset_connection):
+        """Test get_client helper function."""
+        client = get_client()
+        assert client is not None
+        # Verify it can ping
+        result = client.admin.command("ping")
+        assert result["ok"] == 1
+
+    @pytest.mark.integration
+    def test_get_collection_helper(self, reset_connection):
+        """Test get_collection helper function."""
+        collection = get_collection("test_collection")
+        assert collection is not None
+        assert collection.name == "test_collection"
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_get_async_client_helper(self, reset_connection):
+        """Test get_async_client helper function."""
+        client = await get_async_client()
+        assert client is not None
+        # Verify it can ping
+        result = await client.admin.command("ping")
+        assert result["ok"] == 1
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_get_async_database_helper(self, reset_connection):
+        """Test get_async_database helper function."""
+        db = await get_async_database()
+        assert db is not None
+        assert db.name == os.getenv("MONGO_DB_NAME", "test_db")
+
+    @pytest.mark.integration
+    @pytest.mark.asyncio
+    async def test_get_async_database_helper_with_custom_name(self, reset_connection):
+        """Test get_async_database helper with custom database name."""
+        db = await get_async_database("custom_helper_db")
+        assert db is not None
+        assert db.name == "custom_helper_db"
+
+    @pytest.mark.integration
+    def test_client_property_reinitialize(self, reset_connection):
+        """Test that client property reinitializes if None."""
+        conn = MongoConnection()
+        # Force client to None
+        conn._client = None
+        # Access property should reinitialize
+        client = conn.client
+        assert client is not None
+
+    @pytest.mark.integration
+    def test_database_property_reinitialize(self, reset_connection):
+        """Test that database property reinitializes if None."""
+        conn = MongoConnection()
+        # Force database to None
+        conn._db = None
+        # Access property should reinitialize
+        db = conn.database
+        assert db is not None
+
+    @pytest.mark.integration
+    def test_get_collection_reinitialize(self, reset_connection):
+        """Test that get_collection reinitializes if db is None."""
+        conn = MongoConnection()
+        # Force database to None
+        conn._db = None
+        # get_collection should reinitialize
+        collection = conn.get_collection("test_reinit")
+        assert collection is not None
+
