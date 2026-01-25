@@ -1,4 +1,9 @@
-"""Pytest configuration and fixtures for lightodm tests."""
+"""
+Pytest configuration and fixtures for lightodm tests.
+
+- Unit tests: Use mongomock fixtures (no MongoDB required)
+- Integration tests: Use real MongoDB via environment variables (required)
+"""
 
 import mongomock
 import pytest
@@ -113,3 +118,22 @@ def reset_connection():
     # Clean up after test
     if MongoConnection._instance:
         MongoConnection._instance.close_connection()
+
+
+@pytest.fixture
+async def cleanup_test_collections():
+    """
+    Cleanup fixture for integration tests.
+    Drops all test collections after each integration test.
+    """
+    yield
+    # Cleanup after test
+    try:
+        from lightodm.connection import get_async_database
+        db = await get_async_database()
+        collections = await db.list_collection_names()
+        for collection_name in collections:
+            await db[collection_name].delete_many({})
+    except Exception:
+        # If MongoDB not available, that's fine (integration test would have failed anyway)
+        pass

@@ -20,6 +20,7 @@ class SampleUser(MongoBaseModel):
     age: Optional[int] = None
 
 
+@pytest.mark.unit
 def test_generate_id():
     """Test ID generation"""
     id1 = generate_id()
@@ -31,6 +32,7 @@ def test_generate_id():
     assert len(id1) == 24  # ObjectId string length
 
 
+@pytest.mark.unit
 def test_model_creation():
     """Test model instantiation"""
     user = SampleUser(name="John Doe", email="john@example.com", age=30)
@@ -42,6 +44,7 @@ def test_model_creation():
     assert isinstance(user.id, str)
 
 
+@pytest.mark.unit
 def test_model_default_id():
     """Test that ID is auto-generated"""
     user1 = SampleUser(name="User 1", email="user1@example.com")
@@ -52,6 +55,7 @@ def test_model_default_id():
     assert user1.id != user2.id
 
 
+@pytest.mark.unit
 def test_to_mongo_dict():
     """Test conversion to MongoDB dictionary"""
     user = SampleUser(name="John Doe", email="john@example.com", age=30)
@@ -64,6 +68,7 @@ def test_to_mongo_dict():
     assert data["age"] == 30
 
 
+@pytest.mark.unit
 def test_to_mongo_dict_exclude_none():
     """Test conversion with exclude_none"""
     user = SampleUser(name="John Doe", email="john@example.com")
@@ -75,6 +80,7 @@ def test_to_mongo_dict_exclude_none():
     assert "age" not in data  # None value excluded
 
 
+@pytest.mark.unit
 def test_from_mongo_dict():
     """Test creation from MongoDB document"""
     doc = {
@@ -92,12 +98,14 @@ def test_from_mongo_dict():
     assert user.age == 30
 
 
+@pytest.mark.unit
 def test_from_mongo_dict_none():
     """Test _from_mongo_dict with None input"""
     user = SampleUser._from_mongo_dict(None)
     assert user is None
 
 
+@pytest.mark.unit
 def test_extra_fields():
     """Test that extra fields are allowed"""
     user = SampleUser(name="John Doe", email="john@example.com", custom_field="custom_value")
@@ -110,6 +118,7 @@ def test_extra_fields():
     assert data.get("custom_field") == "custom_value"
 
 
+@pytest.mark.unit
 def test_collection_name_validation():
     """Test that Settings.name is validated"""
 
@@ -131,6 +140,7 @@ def test_collection_name_validation():
         InvalidModel._get_collection_name()
 
 
+@pytest.mark.unit
 def test_overridden_id_without_alias_is_mapped():
     """Test that an overridden id field without alias still maps to _id"""
 

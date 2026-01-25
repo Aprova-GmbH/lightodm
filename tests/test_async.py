@@ -15,148 +15,93 @@ class AsyncTestModel(MongoBaseModel):
     value: int
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
-async def test_async_save_and_get(async_mock_collection):
-    """Test async save and get operations."""
-    original_method = AsyncTestModel.get_async_collection
-    collection = async_mock_collection(AsyncTestModel.Settings.name)
+async def test_async_save_and_get(cleanup_test_collections):
+    """Test async save and get operations with real MongoDB."""
+    # Create and save - uses real MongoDB via environment variables
+    model = AsyncTestModel(name="async_test", value=42)
+    doc_id = await model.asave()
 
-    @classmethod
-    async def mock_get_collection(cls):
-        return collection
+    assert doc_id == model.id
 
-    AsyncTestModel.get_async_collection = mock_get_collection
-
-    try:
-        # Create and save
-        model = AsyncTestModel(name="async_test", value=42)
-        doc_id = await model.asave()
-
-        assert doc_id == model.id
-
-        # Retrieve
-        retrieved = await AsyncTestModel.aget(doc_id)
-        assert retrieved is not None
-        assert retrieved.name == "async_test"
-        assert retrieved.value == 42
-    finally:
-        AsyncTestModel.get_async_collection = original_method
+    # Retrieve - uses real MongoDB
+    retrieved = await AsyncTestModel.aget(doc_id)
+    assert retrieved is not None
+    assert retrieved.name == "async_test"
+    assert retrieved.value == 42
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
-async def test_async_find(async_mock_collection):
-    """Test async find operations."""
-    original_method = AsyncTestModel.get_async_collection
-    collection = async_mock_collection(AsyncTestModel.Settings.name)
+async def test_async_find(cleanup_test_collections):
+    """Test async find operations with real MongoDB."""
+    # Create multiple documents
+    models = [AsyncTestModel(name=f"test_{i}", value=i) for i in range(5)]
 
-    @classmethod
-    async def mock_get_collection(cls):
-        return collection
-
-    AsyncTestModel.get_async_collection = mock_get_collection
-
-    try:
-        # Create multiple documents
-        models = [AsyncTestModel(name=f"test_{i}", value=i) for i in range(5)]
-
-        for model in models:
-            await model.asave()
-
-        # Find all
-        results = await AsyncTestModel.afind({})
-        assert len(results) == 5
-
-        # Find with filter
-        results = await AsyncTestModel.afind({"value": {"$gte": 3}})
-        assert len(results) == 2
-    finally:
-        AsyncTestModel.get_async_collection = original_method
-
-
-@pytest.mark.asyncio
-async def test_async_delete(async_mock_collection):
-    """Test async delete operation."""
-    original_method = AsyncTestModel.get_async_collection
-    collection = async_mock_collection(AsyncTestModel.Settings.name)
-
-    @classmethod
-    async def mock_get_collection(cls):
-        return collection
-
-    AsyncTestModel.get_async_collection = mock_get_collection
-
-    try:
-        # Create and save
-        model = AsyncTestModel(name="to_delete", value=100)
+    for model in models:
         await model.asave()
 
-        # Verify it exists
-        retrieved = await AsyncTestModel.aget(model.id)
-        assert retrieved is not None
+    # Find all
+    results = await AsyncTestModel.afind({})
+    assert len(results) == 5
 
-        # Delete
-        deleted = await model.adelete()
-        assert deleted is True
-
-        # Verify it's gone
-        retrieved = await AsyncTestModel.aget(model.id)
-        assert retrieved is None
-    finally:
-        AsyncTestModel.get_async_collection = original_method
+    # Find with filter
+    results = await AsyncTestModel.afind({"value": {"$gte": 3}})
+    assert len(results) == 2
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
-async def test_async_update(async_mock_collection):
-    """Test async update operations."""
-    original_method = AsyncTestModel.get_async_collection
-    collection = async_mock_collection(AsyncTestModel.Settings.name)
+async def test_async_delete(cleanup_test_collections):
+    """Test async delete operation with real MongoDB."""
+    # Create and save
+    model = AsyncTestModel(name="to_delete", value=100)
+    await model.asave()
 
-    @classmethod
-    async def mock_get_collection(cls):
-        return collection
+    # Verify it exists
+    retrieved = await AsyncTestModel.aget(model.id)
+    assert retrieved is not None
 
-    AsyncTestModel.get_async_collection = mock_get_collection
+    # Delete
+    deleted = await model.adelete()
+    assert deleted is True
 
-    try:
-        # Create initial document
-        model = AsyncTestModel(name="original", value=10)
+    # Verify it's gone
+    retrieved = await AsyncTestModel.aget(model.id)
+    assert retrieved is None
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_async_update(cleanup_test_collections):
+    """Test async update operations with real MongoDB."""
+    # Create initial document
+    model = AsyncTestModel(name="original", value=10)
+    await model.asave()
+
+    # Update
+    success = await AsyncTestModel.aupdate_one({"_id": model.id}, {"$set": {"value": 20}})
+    assert success is True
+
+    # Verify update
+    retrieved = await AsyncTestModel.aget(model.id)
+    assert retrieved.value == 20
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_async_count(cleanup_test_collections):
+    """Test async count operation with real MongoDB."""
+    # Create documents
+    for i in range(3):
+        model = AsyncTestModel(name=f"count_test_{i}", value=i)
         await model.asave()
 
-        # Update
-        success = await AsyncTestModel.aupdate_one({"_id": model.id}, {"$set": {"value": 20}})
-        assert success is True
+    # Count all
+    count = await AsyncTestModel.acount()
+    assert count == 3
 
-        # Verify update
-        retrieved = await AsyncTestModel.aget(model.id)
-        assert retrieved.value == 20
-    finally:
-        AsyncTestModel.get_async_collection = original_method
-
-
-@pytest.mark.asyncio
-async def test_async_count(async_mock_collection):
-    """Test async count operation."""
-    original_method = AsyncTestModel.get_async_collection
-    collection = async_mock_collection(AsyncTestModel.Settings.name)
-
-    @classmethod
-    async def mock_get_collection(cls):
-        return collection
-
-    AsyncTestModel.get_async_collection = mock_get_collection
-
-    try:
-        # Create documents
-        for i in range(3):
-            model = AsyncTestModel(name=f"count_test_{i}", value=i)
-            await model.asave()
-
-        # Count all
-        count = await AsyncTestModel.acount()
-        assert count == 3
-
-        # Count with filter
-        count = await AsyncTestModel.acount({"value": {"$gt": 0}})
-        assert count == 2
-    finally:
-        AsyncTestModel.get_async_collection = original_method
+    # Count with filter
+    count = await AsyncTestModel.acount({"value": {"$gt": 0}})
+    assert count == 2

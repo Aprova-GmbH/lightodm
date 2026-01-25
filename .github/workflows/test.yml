@@ -45,14 +45,18 @@ jobs:
           black --check src tests
           ruff check src tests
 
-      - name: Run tests with coverage
+      - name: Run unit tests
+        run: |
+          pytest -m unit --cov=lightodm --cov-report=xml --cov-report=term-missing
+
+      - name: Run integration tests
         env:
           MONGO_URL: mongodb://localhost:27017
           MONGO_USER: test
           MONGO_PASSWORD: test
           MONGO_DB_NAME: test_db
         run: |
-          pytest --cov=lightodm --cov-report=xml --cov-report=term-missing
+          pytest -m integration --cov=lightodm --cov-append --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

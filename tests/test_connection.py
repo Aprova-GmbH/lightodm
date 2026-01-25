@@ -1,266 +1,184 @@
 """Tests for MongoConnection singleton"""
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import MongoClient
 
-from lightodm.connection import MongoConnection, connect
+from lightodm.connection import MongoConnection, connect, get_database
 
 
 class TestMongoConnection:
     """Test MongoConnection singleton class"""
 
-    def test_singleton_pattern(self, monkeypatch, mock_mongo_client, reset_connection):
-        """Test that MongoConnection is a singleton"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+    @pytest.mark.integration
+    def test_singleton_pattern(self, reset_connection):
+        """Test that MongoConnection is a singleton with real MongoDB"""
+        conn1 = MongoConnection()
+        conn2 = MongoConnection()
 
-        with patch("lightodm.connection.MongoClient", return_value=mock_mongo_client):
-            conn1 = MongoConnection()
-            conn2 = MongoConnection()
+        assert conn1 is conn2
+        assert MongoConnection._instance is conn1
 
-            assert conn1 is conn2
-            assert MongoConnection._instance is conn1
+    @pytest.mark.integration
+    def test_get_collection_sync(self, reset_connection):
+        """Test getting synchronous collection with real MongoDB"""
+        conn = MongoConnection()
+        collection = conn.get_collection("test_collection")
 
-    def test_get_collection_sync(self, mock_mongo_client, monkeypatch, reset_connection):
-        """Test getting synchronous collection"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+        assert collection is not None
+        assert collection.name == "test_collection"
 
-        with patch("lightodm.connection.MongoClient", return_value=mock_mongo_client):
-            conn = MongoConnection()
-            collection = conn.get_collection("test_collection")
-
-            assert collection is not None
-            assert collection.name == "test_collection"
-
+    @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_get_async_client(self, monkeypatch, reset_connection):
-        """Test getting async client"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+    async def test_get_async_client(self, reset_connection):
+        """Test getting async client with real MongoDB"""
+        conn = MongoConnection()
+        client = await conn.get_async_client()
 
-        mock_sync_client = MagicMock(spec=MongoClient)
-        mock_sync_admin = MagicMock()
-        mock_sync_admin.command = MagicMock(return_value={"ok": 1})
-        mock_sync_client.admin = mock_sync_admin
+        assert client is not None
+        # Verify it's a real Motor client by checking it can ping
+        result = await client.admin.command("ping")
+        assert result["ok"] == 1
 
-        mock_motor_client = MagicMock(spec=AsyncIOMotorClient)
-        mock_motor_admin = MagicMock()
-        mock_motor_admin.command = AsyncMock(return_value={"ok": 1})
-        mock_motor_client.admin = mock_motor_admin
-
-        with patch("lightodm.connection.MongoClient", return_value=mock_sync_client):
-            with patch("lightodm.connection.AsyncIOMotorClient", return_value=mock_motor_client):
-                conn = MongoConnection()
-                client = await conn.get_async_client()
-
-                assert client is not None
-                mock_motor_admin.command.assert_called_with("ping")
-
+    @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_get_async_database(self, monkeypatch, reset_connection):
-        """Test getting async database"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+    async def test_get_async_database(self, reset_connection):
+        """Test getting async database with real MongoDB"""
+        conn = MongoConnection()
+        db = await conn.get_async_database()
 
-        mock_sync_client = MagicMock(spec=MongoClient)
-        mock_sync_admin = MagicMock()
-        mock_sync_admin.command = MagicMock(return_value={"ok": 1})
-        mock_sync_client.admin = mock_sync_admin
+        assert db is not None
+        assert db.name == os.getenv("MONGO_DB_NAME", "test_db")
 
-        mock_motor_client = MagicMock(spec=AsyncIOMotorClient)
-        mock_motor_admin = MagicMock()
-        mock_motor_admin.command = AsyncMock(return_value={"ok": 1})
-        mock_motor_client.admin = mock_motor_admin
-        mock_db = MagicMock()
-        mock_motor_client.__getitem__ = MagicMock(return_value=mock_db)
-
-        with patch("lightodm.connection.MongoClient", return_value=mock_sync_client):
-            with patch("lightodm.connection.AsyncIOMotorClient", return_value=mock_motor_client):
-                conn = MongoConnection()
-                db = await conn.get_async_database()
-
-                assert db is not None
-
+    @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_get_async_database_custom_name(self, monkeypatch, reset_connection):
-        """Test getting async database with custom name"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+    async def test_get_async_database_custom_name(self, reset_connection):
+        """Test getting async database with custom name using real MongoDB"""
+        conn = MongoConnection()
+        db = await conn.get_async_database("custom_db")
 
-        mock_sync_client = MagicMock(spec=MongoClient)
-        mock_sync_admin = MagicMock()
-        mock_sync_admin.command = MagicMock(return_value={"ok": 1})
-        mock_sync_client.admin = mock_sync_admin
+        assert db is not None
+        assert db.name == "custom_db"
 
-        mock_motor_client = MagicMock(spec=AsyncIOMotorClient)
-        mock_motor_admin = MagicMock()
-        mock_motor_admin.command = AsyncMock(return_value={"ok": 1})
-        mock_motor_client.admin = mock_motor_admin
-        mock_custom_db = MagicMock()
+    @pytest.mark.integration
+    def test_close_connection(self, reset_connection):
+        """Test connection cleanup with real MongoDB"""
+        conn = MongoConnection()
+        _ = conn.client  # Initialize sync client
 
-        def getitem_side_effect(key):
-            if key == "custom_db":
-                return mock_custom_db
-            return MagicMock()
+        # Verify client exists
+        assert conn._client is not None
 
-        mock_motor_client.__getitem__ = MagicMock(side_effect=getitem_side_effect)
+        conn.close_connection()
 
-        with patch("lightodm.connection.MongoClient", return_value=mock_sync_client):
-            with patch("lightodm.connection.AsyncIOMotorClient", return_value=mock_motor_client):
-                conn = MongoConnection()
-                db = await conn.get_async_database("custom_db")
+        assert conn._client is None
+        assert conn._db is None
 
-                assert db is mock_custom_db
-
-    def test_close_connection(self, monkeypatch, reset_connection):
-        """Test connection cleanup"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
-
-        mock_client = MagicMock(spec=MongoClient)
-        mock_admin = MagicMock()
-        mock_admin.command = MagicMock(return_value={"ok": 1})
-        mock_client.admin = mock_admin
-
-        with patch("lightodm.connection.MongoClient", return_value=mock_client):
-            conn = MongoConnection()
-            _ = conn.client  # Initialize sync client
-
-            conn.close_connection()
-
-            assert conn._client is None
-            assert conn._db is None
-            mock_client.close.assert_called_once()
-
+    @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_close_async_connection(self, monkeypatch, reset_connection):
-        """Test async connection cleanup"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+    async def test_close_async_connection(self, reset_connection):
+        """Test async connection cleanup with real MongoDB"""
+        conn = MongoConnection()
+        await conn.get_async_client()  # Initialize async client
 
-        mock_sync_client = MagicMock(spec=MongoClient)
-        mock_sync_admin = MagicMock()
-        mock_sync_admin.command = MagicMock(return_value={"ok": 1})
-        mock_sync_client.admin = mock_sync_admin
+        # Verify async client exists
+        assert conn._async_client is not None
 
-        mock_motor_client = MagicMock(spec=AsyncIOMotorClient)
-        mock_motor_admin = MagicMock()
-        mock_motor_admin.command = AsyncMock(return_value={"ok": 1})
-        mock_motor_client.admin = mock_motor_admin
+        conn.close_connection()
 
-        with patch("lightodm.connection.MongoClient", return_value=mock_sync_client):
-            with patch("lightodm.connection.AsyncIOMotorClient", return_value=mock_motor_client):
-                conn = MongoConnection()
-                await conn.get_async_client()  # Initialize async client
+        assert conn._async_client is None
 
-                conn.close_connection()
-
-                assert conn._async_client is None
-                mock_motor_client.close.assert_called_once()
-
+    @pytest.mark.integration
     def test_missing_env_vars_raises_error(self, reset_connection):
         """Test that missing environment variables raise error"""
-        # Clear environment variables
-        for key in ["MONGO_URL", "MONGO_USER", "MONGO_PASSWORD"]:
-            if key in os.environ:
-                del os.environ[key]
+        # Save current env vars
+        saved_env = {
+            key: os.environ.get(key)
+            for key in ["MONGO_URL", "MONGO_USER", "MONGO_PASSWORD", "MONGO_DB_NAME"]
+        }
 
-        with pytest.raises(ValueError, match="MongoDB connection parameters"):
-            MongoConnection()
+        try:
+            # Clear environment variables
+            for key in ["MONGO_URL", "MONGO_USER", "MONGO_PASSWORD"]:
+                if key in os.environ:
+                    del os.environ[key]
 
-    def test_connect_helper(self, monkeypatch, reset_connection):
-        """Test connect helper function"""
-        mock_client = MagicMock(spec=MongoClient)
-        mock_admin = MagicMock()
-        mock_admin.command = MagicMock(return_value={"ok": 1})
-        mock_client.admin = mock_admin
+            with pytest.raises(ValueError, match="MongoDB connection parameters"):
+                MongoConnection()
+        finally:
+            # Restore env vars
+            for key, value in saved_env.items():
+                if value is not None:
+                    os.environ[key] = value
+                elif key in os.environ:
+                    del os.environ[key]
 
-        with patch("lightodm.connection.MongoClient", return_value=mock_client):
-            db = connect(
-                url="mongodb://localhost:27017",
-                username="testuser",
-                password="testpass",
-                db_name="testdb",
-            )
+    @pytest.mark.integration
+    def test_connect_helper(self, reset_connection):
+        """Test connect helper function with real MongoDB"""
+        # Use environment variables to get connection details
+        url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+        username = os.getenv("MONGO_USER", "test")
+        password = os.getenv("MONGO_PASSWORD", "test")
+        db_name = os.getenv("MONGO_DB_NAME", "test_db")
 
-            assert db is not None
-            assert MongoConnection._instance is not None
+        db = connect(
+            url=url,
+            username=username,
+            password=password,
+            db_name=db_name,
+        )
 
+        assert db is not None
+        assert MongoConnection._instance is not None
+
+    @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_async_client_lazy_initialization(self, monkeypatch, reset_connection):
-        """Test that async client is only created when requested"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+    async def test_async_client_lazy_initialization(self, reset_connection):
+        """Test that async client is only created when requested with real MongoDB"""
+        conn = MongoConnection()
 
-        mock_sync_client = MagicMock(spec=MongoClient)
-        mock_sync_admin = MagicMock()
-        mock_sync_admin.command = MagicMock(return_value={"ok": 1})
-        mock_sync_client.admin = mock_sync_admin
+        # Async client should not be initialized yet
+        assert conn._async_client is None
 
-        with patch("lightodm.connection.MongoClient", return_value=mock_sync_client):
-            conn = MongoConnection()
+        # Now request async client
+        client = await conn.get_async_client()
 
-            # Async client should not be initialized yet
-            assert conn._async_client is None
+        assert client is not None
+        assert conn._async_client is not None
 
-            # Now request async client
-            mock_motor_client = MagicMock(spec=AsyncIOMotorClient)
-            mock_motor_admin = MagicMock()
-            mock_motor_admin.command = AsyncMock(return_value={"ok": 1})
-            mock_motor_client.admin = mock_motor_admin
-
-            with patch("lightodm.connection.AsyncIOMotorClient", return_value=mock_motor_client):
-                client = await conn.get_async_client()
-
-                assert client is not None
-                assert conn._async_client is mock_motor_client
-
+    @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_async_client_connection_error(self, monkeypatch, reset_connection):
+    async def test_async_client_connection_error(self, reset_connection):
         """Test handling of async connection errors"""
-        monkeypatch.setenv("MONGO_URL", "mongodb://localhost:27017")
-        monkeypatch.setenv("MONGO_USER", "testuser")
-        monkeypatch.setenv("MONGO_PASSWORD", "testpass")
-        monkeypatch.setenv("MONGO_DB_NAME", "testdb")
+        # Save current env vars
+        saved_env = {
+            key: os.environ.get(key)
+            for key in ["MONGO_URL", "MONGO_USER", "MONGO_PASSWORD", "MONGO_DB_NAME"]
+        }
 
-        mock_sync_client = MagicMock(spec=MongoClient)
-        mock_sync_admin = MagicMock()
-        mock_sync_admin.command = MagicMock(return_value={"ok": 1})
-        mock_sync_client.admin = mock_sync_admin
+        try:
+            # Set invalid connection URL
+            os.environ["MONGO_URL"] = "mongodb://invalid:99999"
+            os.environ["MONGO_USER"] = "invalid"
+            os.environ["MONGO_PASSWORD"] = "invalid"
+            os.environ["MONGO_DB_NAME"] = "invalid"
 
-        with patch("lightodm.connection.MongoClient", return_value=mock_sync_client):
+            # Force reset to pick up new env vars
+            MongoConnection._instance = None
+
             conn = MongoConnection()
 
-            # Mock async client that fails to connect
-            mock_motor_client = MagicMock(spec=AsyncIOMotorClient)
-            mock_motor_admin = MagicMock()
-            mock_motor_admin.command = AsyncMock(side_effect=Exception("Connection failed"))
-            mock_motor_client.admin = mock_motor_admin
+            # Attempting to get async client with invalid URL should fail
+            with pytest.raises(ConnectionError):
+                await conn.get_async_client()
 
-            with patch("lightodm.connection.AsyncIOMotorClient", return_value=mock_motor_client):
-                with pytest.raises(ConnectionError, match="Connection failed"):
-                    await conn.get_async_client()
-
-                # Ensure client is cleaned up on error
-                assert conn._async_client is None
+            # Ensure client is cleaned up on error
+            assert conn._async_client is None
+        finally:
+            # Restore env vars
+            for key, value in saved_env.items():
+                if value is not None:
+                    os.environ[key] = value
+                elif key in os.environ:
+                    del os.environ[key]
