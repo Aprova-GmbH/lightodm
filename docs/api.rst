@@ -10,8 +10,6 @@ MongoBaseModel
 ~~~~~~~~~~~~~~
 
 .. autoclass:: lightodm.MongoBaseModel
-   :members:
-   :undoc-members:
    :show-inheritance:
 
    Base class for MongoDB document models with ODM functionality.
@@ -83,8 +81,6 @@ MongoConnection
 ~~~~~~~~~~~~~~~
 
 .. autoclass:: lightodm.MongoConnection
-   :members:
-   :undoc-members:
    :show-inheritance:
 
    Singleton MongoDB connection manager supporting both sync and async clients.

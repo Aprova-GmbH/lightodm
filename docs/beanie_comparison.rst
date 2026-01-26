@@ -465,7 +465,7 @@ Migrating from Beanie to LightODM is straightforward:
        author = await post.get_author()
        print(author.name)
 
-For a complete migration guide, see :doc:`MIGRATION_FROM_BEANIE`.
+For a complete migration guide, see the ``MIGRATION_FROM_BEANIE.md`` file in the repository.
 
 Performance
 -----------

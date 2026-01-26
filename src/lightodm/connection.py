@@ -298,6 +298,7 @@ def connect(
     Initialize MongoDB connection with optional explicit parameters.
 
     If parameters are not provided, they will be read from environment variables:
+
     - MONGO_URL
     - MONGO_USER
     - MONGO_PASSWORD
@@ -312,7 +313,8 @@ def connect(
     Returns:
         PyMongo Database instance
 
-    Example:
+    Example::
+
         # Connect with explicit parameters
         db = connect(
             url="mongodb://localhost:27017",
