@@ -35,12 +35,13 @@ from lightodm.connection import (
     get_database,
     get_mongo_connection,
 )
-from lightodm.model import MongoBaseModel, generate_id
+from lightodm.model import MongoBaseModel, generate_composite_id, generate_id
 
 __all__ = [
     # Model
     "MongoBaseModel",
     "generate_id",
+    "generate_composite_id",
     # Connection
     "MongoConnection",
     "connect",

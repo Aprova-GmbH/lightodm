@@ -4,11 +4,12 @@ MongoDB Base Model for Pydantic
 Provides ODM functionality for MongoDB with both sync and async support.
 """
 
+import hashlib
 from typing import AsyncIterator, Iterator, List, Optional, Type, TypeVar
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pymongo.collection import Collection as PyMongoCollection
 
 from lightodm.connection import get_async_database, get_collection
@@ -25,6 +26,20 @@ def generate_id() -> str:
         String representation of a new ObjectId
     """
     return str(ObjectId())
+
+
+def generate_composite_id(values: list) -> str:
+    """
+    Generate MD5 hash from list of values for composite key.
+
+    Args:
+        values: List of values to concatenate and hash
+
+    Returns:
+        32-character hexadecimal MD5 hash string
+    """
+    concatenated = "".join(str(v) for v in values)
+    return hashlib.md5(concatenated.encode("utf-8")).hexdigest()
 
 
 class MongoBaseModel(BaseModel):
@@ -66,6 +81,7 @@ class MongoBaseModel(BaseModel):
     # Settings inner class - must be overridden in subclasses
     class Settings:
         name: Optional[str] = None  # MongoDB collection name
+        composite_key: Optional[List[str]] = None  # Fields for composite key ID
 
     @classmethod
     def _uses_mongo_id_alias(cls) -> bool:
@@ -76,6 +92,34 @@ class MongoBaseModel(BaseModel):
         if alias is None:
             alias = getattr(field, "validation_alias", None)
         return alias == "_id"
+
+    @model_validator(mode="after")
+    def _compute_composite_key(self):
+        """Compute composite key ID if defined in Settings."""
+        composite_key = getattr(self.Settings, "composite_key", None)
+
+        if composite_key is None:
+            return self
+
+        if not isinstance(composite_key, (list, tuple)) or len(composite_key) == 0:
+            raise ValueError("composite_key must be a non-empty list")
+
+        values = []
+        for field_name in composite_key:
+            # Access model_fields from the class, not the instance (Pydantic v2.11+)
+            if field_name not in self.__class__.model_fields and not hasattr(self, field_name):
+                raise ValueError(f"Composite key field '{field_name}' not found in model")
+
+            value = getattr(self, field_name, None)
+            if value is None:
+                raise ValueError(
+                    f"Composite key field '{field_name}' is None. All fields must have values."
+                )
+
+            values.append(value)
+
+        self.id = generate_composite_id(values)
+        return self
 
     def __init_subclass__(cls, **kwargs):
         """
