@@ -139,6 +139,37 @@ product = Product(name="Widget", sku="WDG-001")
 print(product.id)  # Generated ObjectId string
 ```
 
+### Composite Keys
+
+For multi-tenant applications or when you need deterministic IDs based on multiple fields, use composite keys:
+
+```python
+from lightodm import MongoBaseModel
+
+class TenantUser(MongoBaseModel):
+    class Settings:
+        name = "tenant_users"
+        composite_key = ["tenant_id", "user_id"]  # Order matters
+
+    tenant_id: str
+    user_id: str
+    data: str
+
+# ID is computed as MD5 hash of concatenated field values
+user = TenantUser(tenant_id="tenant1", user_id="user1", data="test")
+print(user.id)  # e.g., "a1b2c3..." - always the same for same tenant_id + user_id
+
+# Same values always produce the same ID (idempotent)
+user2 = TenantUser(tenant_id="tenant1", user_id="user1", data="different")
+assert user.id == user2.id  # True - composite key only uses specified fields
+```
+
+Composite key behavior:
+- Field order in `composite_key` list determines concatenation order
+- All composite key fields must have non-None values
+- Composite key takes precedence over explicitly provided IDs
+- Produces a 32-character hexadecimal MD5 hash
+
 ### Custom Connection
 
 Override `get_collection()` or `get_async_collection()` for custom connection logic:
