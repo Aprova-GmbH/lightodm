@@ -315,3 +315,171 @@ def test_composite_key_roundtrip():
     assert loaded.tenant_id == original.tenant_id
     assert loaded.user_id == original.user_id
     assert loaded.data == original.data
+
+
+# =============================================================================
+# Integration tests (require MongoDB)
+# =============================================================================
+
+
+@pytest.mark.integration
+def test_composite_key_save_and_get(cleanup_test_collections):
+    """Test saving and retrieving a model with composite key."""
+    user = TenantUser(tenant_id="tenant1", user_id="user1", data="test_data")
+    doc_id = user.save()
+
+    # ID should be the composite key hash
+    expected_id = hashlib.md5(b"tenant1user1").hexdigest()
+    assert doc_id == expected_id
+
+    # Retrieve by ID
+    retrieved = TenantUser.get(doc_id)
+    assert retrieved is not None
+    assert retrieved.tenant_id == "tenant1"
+    assert retrieved.user_id == "user1"
+    assert retrieved.data == "test_data"
+    assert retrieved.id == expected_id
+
+
+@pytest.mark.integration
+def test_composite_key_upsert_behavior(cleanup_test_collections):
+    """Test that saving same composite key updates existing document."""
+    # Create initial document
+    user1 = TenantUser(tenant_id="tenant1", user_id="user1", data="original")
+    user1.save()
+
+    # Create another instance with same composite key but different data
+    user2 = TenantUser(tenant_id="tenant1", user_id="user1", data="updated")
+    user2.save()
+
+    # Both should have the same ID
+    assert user1.id == user2.id
+
+    # Should only be one document in the collection
+    count = TenantUser.count({})
+    assert count == 1
+
+    # The document should have the updated data
+    retrieved = TenantUser.get(user1.id)
+    assert retrieved.data == "updated"
+
+
+@pytest.mark.integration
+def test_composite_key_find_by_fields(cleanup_test_collections):
+    """Test finding documents by composite key fields."""
+    # Create multiple documents
+    TenantUser(tenant_id="tenant1", user_id="user1", data="data1").save()
+    TenantUser(tenant_id="tenant1", user_id="user2", data="data2").save()
+    TenantUser(tenant_id="tenant2", user_id="user1", data="data3").save()
+
+    # Find by tenant_id
+    results = TenantUser.find({"tenant_id": "tenant1"})
+    assert len(results) == 2
+
+    # Find by both fields
+    result = TenantUser.find_one({"tenant_id": "tenant1", "user_id": "user2"})
+    assert result is not None
+    assert result.data == "data2"
+
+
+@pytest.mark.integration
+def test_composite_key_delete(cleanup_test_collections):
+    """Test deleting a document with composite key."""
+    user = TenantUser(tenant_id="tenant1", user_id="user1", data="to_delete")
+    user.save()
+
+    # Verify it exists
+    assert TenantUser.get(user.id) is not None
+
+    # Delete
+    deleted = user.delete()
+    assert deleted is True
+
+    # Verify it's gone
+    assert TenantUser.get(user.id) is None
+
+
+@pytest.mark.integration
+def test_composite_key_insert_many(cleanup_test_collections):
+    """Test bulk inserting documents with composite keys."""
+    users = [TenantUser(tenant_id="tenant1", user_id=f"user{i}", data=f"data{i}") for i in range(3)]
+
+    ids = TenantUser.insert_many(users)
+    assert len(ids) == 3
+
+    # Each ID should be deterministic
+    for i, _user in enumerate(users):
+        expected_id = hashlib.md5(f"tenant1user{i}".encode()).hexdigest()
+        assert ids[i] == expected_id
+
+
+@pytest.mark.integration
+async def test_composite_key_async_save_and_get(cleanup_test_collections):
+    """Test async save and get with composite key."""
+    user = TenantUser(tenant_id="tenant_async", user_id="user_async", data="async_data")
+    doc_id = await user.asave()
+
+    expected_id = hashlib.md5(b"tenant_asyncuser_async").hexdigest()
+    assert doc_id == expected_id
+
+    # Retrieve
+    retrieved = await TenantUser.aget(doc_id)
+    assert retrieved is not None
+    assert retrieved.tenant_id == "tenant_async"
+    assert retrieved.user_id == "user_async"
+    assert retrieved.data == "async_data"
+
+
+@pytest.mark.integration
+async def test_composite_key_async_upsert(cleanup_test_collections):
+    """Test async upsert behavior with composite key."""
+    # Create initial
+    user1 = TenantUser(tenant_id="tenant_async", user_id="user1", data="original")
+    await user1.asave()
+
+    # Update with same composite key
+    user2 = TenantUser(tenant_id="tenant_async", user_id="user1", data="updated_async")
+    await user2.asave()
+
+    # Should be only one document
+    count = await TenantUser.acount({})
+    assert count == 1
+
+    # Should have updated data
+    retrieved = await TenantUser.aget(user1.id)
+    assert retrieved.data == "updated_async"
+
+
+@pytest.mark.integration
+async def test_composite_key_async_find(cleanup_test_collections):
+    """Test async find with composite key models."""
+    # Create documents
+    await TenantUser(tenant_id="t1", user_id="u1", data="d1").asave()
+    await TenantUser(tenant_id="t1", user_id="u2", data="d2").asave()
+    await TenantUser(tenant_id="t2", user_id="u1", data="d3").asave()
+
+    # Find
+    results = await TenantUser.afind({"tenant_id": "t1"})
+    assert len(results) == 2
+
+    # Find one
+    result = await TenantUser.afind_one({"tenant_id": "t2"})
+    assert result is not None
+    assert result.data == "d3"
+
+
+@pytest.mark.integration
+async def test_composite_key_async_delete(cleanup_test_collections):
+    """Test async delete with composite key."""
+    user = TenantUser(tenant_id="t_del", user_id="u_del", data="delete_me")
+    await user.asave()
+
+    # Verify exists
+    assert await TenantUser.aget(user.id) is not None
+
+    # Delete
+    deleted = await user.adelete()
+    assert deleted is True
+
+    # Verify gone
+    assert await TenantUser.aget(user.id) is None
