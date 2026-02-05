@@ -23,7 +23,7 @@ Example:
     await user.asave()
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from lightodm.connection import (
     MongoConnection,

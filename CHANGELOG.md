@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-05
+
+### Added
+- **Composite key support** for deterministic ID generation
+  - New `composite_key` setting in `Settings` class
+  - IDs computed as MD5 hash of concatenated field values
+  - Enables multi-tenant applications with predictable document IDs
+  - New `generate_composite_id()` helper function exported from package
+- Comprehensive integration tests for composite key functionality
+- `CLAUDE.md` project guidance file for AI-assisted development
+- Additional edge case tests improving code coverage
+
+### Changed
+- Improved API documentation formatting and clarity
+- Updated test organization with clear unit/integration separation
+
+### Fixed
+- Pydantic v2.11+ deprecation warning for `model_fields` access on instances
+
 ## [0.1.0] - 2026-01-17
 
 ### Added
